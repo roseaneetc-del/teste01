@@ -11,7 +11,7 @@ function Login(){const {login}=useApp();const [email,setEmail]=useState("");cons
 
 const menu=[["dashboard","Dashboard",LayoutDashboard],["students","Alunos",Users],["teachers","Professores",GraduationCap],["classes","Turmas",BookOpenCheck],["tasks","Tarefas",CheckCircle2],["activities","Atividades",Gamepad2],["calendar","Calendário",CalendarDays],["finance","Financeiro",WalletCards],["reports","Relatórios",BarChart3],["notifications","Notificações",Bell],["settings","Configurações",Settings]] as const;
 
-function App(){const {role,students,tasks,payments,focus,logout}=useApp(); const [authed,setAuthed]=useState(()=>!!localStorage.getItem("pas-role")); const [page,setPage]=useState("dashboard");const [open,setOpen]=useState(false);
+function App(){const {role,students,tasks,payments,focus,setFocus,logout}=useApp(); const [authed,setAuthed]=useState(()=>!!localStorage.getItem("pas-role")); const [page,setPage]=useState("dashboard");const [open,setOpen]=useState(false);
  if(!authed)return <Login/>; if(role==="student")return <StudentApp setPage={setPage} page={page} logout={()=>{logout();setAuthed(false)}}/>;
  const allowed=menu.filter(([id])=>role==="teacher"?["dashboard","students","classes","tasks","activities","calendar","notifications"].includes(id):true);
  const current=allowed.find(x=>x[0]===page)||allowed[0];
