@@ -69,3 +69,85 @@ begin
 end; $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_user();
+
+-- Complemento de segurança e dados iniciais do Projeto Amigos do Saber.
+create policy authenticated_read_achievements on public.achievements for select using (auth.uid() is not null);
+create policy own_student_achievements on public.student_achievements for select using (
+  exists(select 1 from public.students s where s.id=student_achievements.student_id and (s.user_id=auth.uid() or public.my_role()='admin'))
+);
+create policy own_points on public.points for select using (
+  exists(select 1 from public.students s where s.id=points.student_id and (s.user_id=auth.uid() or public.my_role()='admin'))
+);
+create policy own_progress on public.student_progress for select using (
+  exists(select 1 from public.students s where s.id=student_progress.student_id and (s.user_id=auth.uid() or public.my_role()='admin'))
+);
+create policy activity_results_own on public.activity_results for all using (
+  public.my_role()='admin' or exists(select 1 from public.students s where s.id=activity_results.student_id and s.user_id=auth.uid())
+) with check (
+  public.my_role()='admin' or exists(select 1 from public.students s where s.id=activity_results.student_id and s.user_id=auth.uid())
+);
+create policy calendar_events_read on public.calendar_events for select using (auth.uid() is not null);
+create policy calendar_events_admin on public.calendar_events for all using (public.my_role()='admin');
+
+insert into public.subjects(id,name) values
+('10000000-0000-0000-0000-000000000001','Matemática'),
+('10000000-0000-0000-0000-000000000002','Português'),
+('10000000-0000-0000-0000-000000000003','Geral')
+on conflict (id) do nothing;
+
+insert into public.classes(id,name,schedule) values
+('20000000-0000-0000-0000-000000000001','Descobridores','Seg e Qua · 14:00'),
+('20000000-0000-0000-0000-000000000002','Exploradores','Ter e Qui · 16:00')
+on conflict (id) do nothing;
+
+insert into public.students(id,name,nickname,birth_date,email,guardian,guardian_phone,class_id,joined_at,pedagogical_notes,points,stars,streak) values
+('30000000-0000-0000-0000-000000000001','Ana Beatriz Lima','Bia','2015-03-12','bia@amigosdosaber.demo','Carla Lima','(11) 98888-1111','20000000-0000-0000-0000-000000000001','2026-02-01','Gosta de atividades visuais.',120,12,5),
+('30000000-0000-0000-0000-000000000002','Miguel Santos','Miguel','2013-08-20','miguel@amigosdosaber.demo','Paulo Santos','(11) 98888-2222','20000000-0000-0000-0000-000000000001','2026-02-05','',90,9,3),
+('30000000-0000-0000-0000-000000000003','Sofia Martins','Sofi','2014-11-02','sofi@amigosdosaber.demo','Renata Martins','(11) 98888-3333','20000000-0000-0000-0000-000000000002','2026-03-10','Responde bem a desafios curtos.',180,18,8),
+('30000000-0000-0000-0000-000000000004','João Pedro','João','2012-06-18','joao@amigosdosaber.demo','Marcos Pedro','(11) 98888-4444','20000000-0000-0000-0000-000000000002','2026-01-15','',70,7,2),
+('30000000-0000-0000-0000-000000000005','Lara Oliveira','Lara','2016-01-25','lara@amigosdosaber.demo','Fernanda Oliveira','(11) 98888-5555','20000000-0000-0000-0000-000000000001','2026-04-02','',150,15,6)
+on conflict (id) do nothing;
+
+insert into public.teachers(id,name,email,phone) values
+('40000000-0000-0000-0000-000000000001','Marina Souza','prof.marina@amigosdosaber.demo','(11) 99999-1111'),
+('40000000-0000-0000-0000-000000000002','Lucas Almeida','prof.lucas@amigosdosaber.demo','(11) 99999-2222')
+on conflict (id) do nothing;
+
+insert into public.class_students(class_id,student_id) values
+('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001'),
+('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002'),
+('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000005'),
+('20000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000003'),
+('20000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000004')
+on conflict do nothing;
+
+insert into public.class_teachers(class_id,teacher_id) values
+('20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001'),
+('20000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000002')
+on conflict do nothing;
+
+insert into public.activities(id,title,type,subject,description) values
+('50000000-0000-0000-0000-000000000001','Quiz de Matemática','quiz','Matemática','Desafios rápidos de cálculo.'),
+('50000000-0000-0000-0000-000000000002','Quiz de Português','quiz','Português','Palavras, frases e interpretação.'),
+('50000000-0000-0000-0000-000000000003','Jogo da Memória','memory','Geral','Encontre os pares.'),
+('50000000-0000-0000-0000-000000000004','Associação de Palavras','match','Português','Ligue palavra e significado.'),
+('50000000-0000-0000-0000-000000000005','Desafio Relâmpago','challenge','Geral','Perguntas rápidas para você.'),
+('50000000-0000-0000-0000-000000000006','Sequência Lógica','logic','Matemática','Descubra o próximo passo.'),
+('50000000-0000-0000-0000-000000000007','Matemática Básica','math','Matemática','Pratique operações simples.')
+on conflict (id) do nothing;
+
+insert into public.achievements(id,title,icon,description,threshold) values
+('60000000-0000-0000-0000-000000000001','Primeira tarefa','🏆','Concluiu sua primeira tarefa.',1),
+('60000000-0000-0000-0000-000000000002','5 tarefas','⭐','Concluiu 5 tarefas.',5),
+('60000000-0000-0000-0000-000000000003','10 tarefas','🚀','Concluiu 10 tarefas.',10),
+('60000000-0000-0000-0000-000000000004','20 atividades','📚','Concluiu 20 atividades.',20),
+('60000000-0000-0000-0000-000000000005','5 dias estudando','🔥','Manteve uma sequência de 5 dias.',5)
+on conflict (id) do nothing;
+
+insert into public.payments(id,student_id,amount,due_date,paid_at,method,status) values
+('70000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001',280,'2026-10-05','2026-10-04','Pix','paid'),
+('70000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000002',280,'2026-10-05',null,'Pix','pending'),
+('70000000-0000-0000-0000-000000000003','30000000-0000-0000-0000-000000000003',320,'2026-10-05',null,'Cartão','late'),
+('70000000-0000-0000-0000-000000000004','30000000-0000-0000-0000-000000000004',320,'2026-10-05','2026-10-05','Pix','paid'),
+('70000000-0000-0000-0000-000000000005','30000000-0000-0000-0000-000000000005',280,'2026-10-05','2026-10-03','Dinheiro','paid')
+on conflict (id) do nothing;
